@@ -20,7 +20,7 @@
 input group "=== Trade Settings ==="
 input double   InpLotSize            = 0.02;   // Lot Size (hard limit: 0.02)
 input double   InpRiskRewardRatio    = 2.0;    // Risk:Reward Ratio (1–4)
-input int      InpSlippage           = 3;      // Slippage (points)
+input ulong    InpSlippage           = 3;      // Slippage (points)
 input ulong    InpMagicNumber        = 123456; // Magic Number
 input bool     InpTrailingStopEnabled= true;   // Enable Trailing Stop
 
@@ -450,7 +450,7 @@ bool CheckEntryConditions(const double closePrice,
 //| BUY:  SL = EMA50 minus buffer                                      |
 //| SELL: SL = EMA50 plus buffer                                       |
 //+------------------------------------------------------------------+
-double CalculateStopLoss(const int tradeType, const double emaSlow)
+double CalculateStopLoss(const ENUM_ORDER_TYPE tradeType, const double emaSlow)
 {
    double bufferPrice = InpEMABufferPoints * _Point;
 
@@ -468,7 +468,7 @@ double CalculateStopLoss(const int tradeType, const double emaSlow)
 //| TP = entry + (risk distance × RR ratio) for BUY                    |
 //| TP = entry - (risk distance × RR ratio) for SELL                   |
 //+------------------------------------------------------------------+
-double CalculateTakeProfit(const int tradeType,
+double CalculateTakeProfit(const ENUM_ORDER_TYPE tradeType,
                            const double entryPrice,
                            const double stopLoss)
 {
@@ -489,7 +489,7 @@ double CalculateTakeProfit(const int tradeType,
 //| Validates lot size and checks whether sufficient margin exists.    |
 //| Returns true if the trade is allowed.                              |
 //+------------------------------------------------------------------+
-bool RiskManagement(const double lotSize, const int tradeType)
+bool RiskManagement(const double lotSize, const ENUM_ORDER_TYPE tradeType)
 {
    // Enforce hard maximum lot size
    if(lotSize > MAX_LOT_SIZE)
@@ -514,7 +514,7 @@ bool RiskManagement(const double lotSize, const int tradeType)
    // Check available margin
    double marginRequired = 0.0;
 
-   if(!OrderCalcMargin((ENUM_ORDER_TYPE)tradeType, _Symbol, lotSize,
+   if(!OrderCalcMargin(tradeType, _Symbol, lotSize,
                         SymbolInfoDouble(_Symbol, SYMBOL_ASK), marginRequired))
    {
       Print("RISK: OrderCalcMargin failed. Error: ", GetLastError(), ". Trade blocked.");
@@ -640,7 +640,7 @@ void ManageTrailingStop()
       if(ticket == 0) continue;
 
       if(PositionGetString(POSITION_SYMBOL)  != _Symbol)         continue;
-      if(PositionGetInteger(POSITION_MAGIC)  != (long)InpMagicNumber) continue;
+      if((ulong)PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
 
       double openPrice    = PositionGetDouble(POSITION_PRICE_OPEN);
       double currentSL    = PositionGetDouble(POSITION_SL);
@@ -719,7 +719,7 @@ bool PositionExists()
       if(ticket == 0) continue;
 
       if(PositionGetString(POSITION_SYMBOL)  == _Symbol &&
-         PositionGetInteger(POSITION_MAGIC)  == (long)InpMagicNumber)
+         (ulong)PositionGetInteger(POSITION_MAGIC) == InpMagicNumber)
          return true;
    }
    return false;
